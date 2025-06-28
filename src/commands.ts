@@ -17,11 +17,11 @@ export async function sendMessage(recipient: string, message: string, options: {
     button: Array<string>
 }) {
     checkLoggedIn();
-    const socket = await initWASocket();
+    const {socket, store} = await initWASocket();
     socket.ev.on('connection.update', async (update) => {
         const {connection} = update
         if (connection === 'open') {
-            const whatsappId = await getWhatsAppId(socket, recipient);
+            const whatsappId = await getWhatsAppId(socket, recipient, store);
             signale.await(`Sending message: "${message}" to: ${whatsappId}`);
             const buttons = options.button ? options.button.map((b, idx) => ({
                 buttonId: `id${idx}`,
@@ -47,11 +47,11 @@ export async function sendMessage(recipient: string, message: string, options: {
 export async function sendImage(recipient: string, path: string, options: { caption: string | undefined }) {
     checkValidFile(path);
     checkLoggedIn();
-    const socket = await initWASocket();
+    const {socket, store} = await initWASocket();
     socket.ev.on('connection.update', async (update) => {
         const {connection} = update
         if (connection === 'open') {
-            const whatsappId = await getWhatsAppId(socket, recipient);
+            const whatsappId = await getWhatsAppId(socket, recipient, store);
             signale.await(`Sending image file: "${path}" to: ${whatsappId}`);
             await sendImageHelper(socket, whatsappId, path, options);
         }
@@ -64,11 +64,11 @@ export async function sendFile(recipient: string, path: string, options: {
 }) {
     checkValidFile(path);
     checkLoggedIn();
-    const socket = await initWASocket();
+    const {socket, store} = await initWASocket();
     socket.ev.on('connection.update', async (update) => {
         const {connection} = update
         if (connection === 'open') {
-            const whatsappId = await getWhatsAppId(socket, recipient);
+            const whatsappId = await getWhatsAppId(socket, recipient, store);
             signale.await(`Sending file: "${path}" to: ${whatsappId}`);
             await sendFileHelper(socket, whatsappId, path, options);
         }
@@ -78,11 +78,11 @@ export async function sendFile(recipient: string, path: string, options: {
 export async function sendLocation(recipient: string, latitude: string, longitude: string) {
     checkLoggedIn();
     const geolocation = parseGeoLocation(latitude, longitude);
-    const socket = await initWASocket();
+    const {socket, store} = await initWASocket();
     socket.ev.on('connection.update', async (update) => {
             const {connection} = update
             if (connection === 'open') {
-                const whatsappId = await getWhatsAppId(socket, recipient);
+                const whatsappId = await getWhatsAppId(socket, recipient, store);
                 signale.await(`Sending location: ${geolocation[0]}, ${geolocation[1]} to: ${whatsappId}`);
                 await socket.sendMessage(whatsappId, {
                     location: {
@@ -110,11 +110,11 @@ export async function sendPoll(recipient: string, name: string, options: {
         process.exit(1);
     }
     checkLoggedIn();
-    const socket = await initWASocket();
+    const {socket, store} = await initWASocket();
     socket.ev.on('connection.update', async (update) => {
             const {connection} = update
             if (connection === 'open') {
-                const whatsappId = await getWhatsAppId(socket, recipient);
+                const whatsappId = await getWhatsAppId(socket, recipient, store);
                 signale.await(`Sending poll: "${name}" to: ${whatsappId}`);
                 await socket.sendMessage(whatsappId, {
                     poll: {
@@ -133,7 +133,7 @@ export async function sendPoll(recipient: string, name: string, options: {
 export async function me() {
     checkLoggedIn();
     signale.log(`Cache folder: ${getAuthStateCacheFolderLocation()}`);
-    const socket = await initWASocket();
+    const {socket} = await initWASocket();
     socket.ev.on('connection.update', async (update) => {
         const {connection} = update
         if (connection === 'open') {
@@ -146,7 +146,7 @@ export async function me() {
 
 export async function listGroups() {
     checkLoggedIn();
-    const socket = await initWASocket();
+    const {socket} = await initWASocket();
     socket.ev.on('connection.update', async (update) => {
         const {connection} = update
         if (connection === 'open') {
@@ -161,11 +161,11 @@ export async function listGroups() {
 
 export async function mutateGroup(groupId: string, phoneNumber: string, operation: "add" | "remove") {
     checkLoggedIn();
-    const socket = await initWASocket();
+    const {socket, store} = await initWASocket();
     socket.ev.on('connection.update', async (update) => {
         const {connection} = update
         if (connection === 'open') {
-            const whatsAppId = await getWhatsAppId(socket, phoneNumber);
+            const whatsAppId = await getWhatsAppId(socket, phoneNumber, store);
             if (operation === 'add') {
                 signale.log(`Adding ${whatsAppId} to group ${groupId}`);
             } else {
@@ -182,7 +182,7 @@ export async function mutateGroup(groupId: string, phoneNumber: string, operatio
 
 export async function listGroupParticipants(groupId: string) {
     checkLoggedIn();
-    const socket = await initWASocket();
+    const {socket} = await initWASocket();
     socket.ev.on('connection.update', async (update) => {
         const {connection} = update
         if (connection === 'open') {
@@ -191,6 +191,32 @@ export async function listGroupParticipants(groupId: string) {
                 signale.log(`{"id": "${participant.id}"}`);
             });
             terminate(socket);
+        }
+    });
+}
+
+/**
+ * List all synchronized WhatsApp contacts
+ */
+export async function listContacts() {
+    checkLoggedIn();
+    const {socket, store} = await initWASocket();
+    socket.ev.on('connection.update', async (update) => {
+        const {connection} = update
+        if (connection === 'open') {
+            // Wait a moment for contacts to sync
+            setTimeout(() => {
+                if (store.contacts && Object.keys(store.contacts).length > 0) {
+                    const contacts = Object.values(store.contacts) as any[];
+                    contacts.forEach(contact => {
+                        const name = contact.name || contact.notify || 'Unknown';
+                        signale.log(`{"name": "${name}", "id": "${contact.id}"}`);
+                    });
+                } else {
+                    signale.warn('No contacts found. Make sure WhatsApp has finished syncing.');
+                }
+                terminate(socket);
+            }, 2000);
         }
     });
 }

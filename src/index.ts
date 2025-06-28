@@ -2,6 +2,7 @@
 import {program} from "commander";
 import {globalOptions, login, logout, mudslideFooter} from "./whatsapp";
 import {
+    listContacts,
     listGroupParticipants,
     listGroups,
     me,
@@ -60,6 +61,10 @@ function configureCommands() {
         .command('groups')
         .description('List all your groups')
         .action(() => listGroups());
+    program
+        .command('contacts')
+        .description('List all your contacts')
+        .action(() => listContacts());
     program
         .command('send <recipient> <message>')
         .description('Send message')
