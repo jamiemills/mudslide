@@ -1,5 +1,10 @@
 import {getWhatsAppId, handleNewlines, parseGeoLocation} from "../src/whatsapp";
 
+// Mock the contacts module
+jest.mock("../src/contacts", () => ({
+    findContact: jest.fn(() => null)
+}));
+
 test('get whatsapp id', async () => {
     expect(await getWhatsAppId({}, '3161234567890')).toBe('3161234567890@s.whatsapp.net');
     expect(await getWhatsAppId({}, '3161234567890@s.whatsapp.net')).toBe('3161234567890@s.whatsapp.net');
@@ -8,98 +13,49 @@ test('get whatsapp id', async () => {
     expect(await getWhatsAppId({}, '+3161234567890')).toBe('3161234567890@s.whatsapp.net');
 })
 
-test('get whatsapp id with contact store - exact name match', async () => {
-    const mockStore = {
-        contacts: {
-            'contact1': {
-                id: '1234567890@s.whatsapp.net',
-                name: 'John Doe',
-                notify: 'Johnny'
-            },
-            'contact2': {
-                id: '0987654321@s.whatsapp.net',
-                name: 'Jane Smith',
-                notify: 'Jane'
-            }
-        }
-    };
+test('get whatsapp id with local contacts - exact name match', async () => {
+    const { findContact } = require("../src/contacts");
     
-    expect(await getWhatsAppId({}, 'John Doe', mockStore)).toBe('1234567890@s.whatsapp.net');
-    expect(await getWhatsAppId({}, 'Jane Smith', mockStore)).toBe('0987654321@s.whatsapp.net');
+    findContact.mockReturnValueOnce({ name: 'John Doe', phoneNumber: '1234567890' });
+    expect(await getWhatsAppId({}, 'John Doe')).toBe('1234567890@s.whatsapp.net');
+    
+    findContact.mockReturnValueOnce({ name: 'Jane Smith', phoneNumber: '0987654321' });
+    expect(await getWhatsAppId({}, 'Jane Smith')).toBe('0987654321@s.whatsapp.net');
 })
 
-test('get whatsapp id with contact store - partial name match', async () => {
-    const mockStore = {
-        contacts: {
-            'contact1': {
-                id: '1234567890@s.whatsapp.net',
-                name: 'John Doe',
-                notify: 'Johnny'
-            }
-        }
-    };
+test('get whatsapp id with local contacts - partial name match', async () => {
+    const { findContact } = require("../src/contacts");
     
-    expect(await getWhatsAppId({}, 'john', mockStore)).toBe('1234567890@s.whatsapp.net');
-    expect(await getWhatsAppId({}, 'DOE', mockStore)).toBe('1234567890@s.whatsapp.net');
-    expect(await getWhatsAppId({}, 'John', mockStore)).toBe('1234567890@s.whatsapp.net');
+    // Mock partial matches (the findContact function handles this internally)
+    findContact.mockReturnValueOnce({ name: 'John Doe', phoneNumber: '1234567890' });
+    expect(await getWhatsAppId({}, 'john')).toBe('1234567890@s.whatsapp.net');
+    
+    findContact.mockReturnValueOnce({ name: 'John Doe', phoneNumber: '1234567890' });
+    expect(await getWhatsAppId({}, 'DOE')).toBe('1234567890@s.whatsapp.net');
+    
+    findContact.mockReturnValueOnce({ name: 'John Doe', phoneNumber: '1234567890' });
+    expect(await getWhatsAppId({}, 'John')).toBe('1234567890@s.whatsapp.net');
 })
 
-test('get whatsapp id with contact store - notify name match', async () => {
-    const mockStore = {
-        contacts: {
-            'contact1': {
-                id: '1234567890@s.whatsapp.net',
-                name: 'John Doe',
-                notify: 'Johnny'
-            }
-        }
-    };
+test('get whatsapp id with local contacts - no match fallback to phone', async () => {
+    const { findContact } = require("../src/contacts");
     
-    expect(await getWhatsAppId({}, 'Johnny', mockStore)).toBe('1234567890@s.whatsapp.net');
-    expect(await getWhatsAppId({}, 'johnny', mockStore)).toBe('1234567890@s.whatsapp.net');
+    // Mock no contact found
+    findContact.mockReturnValue(null);
+    
+    expect(await getWhatsAppId({}, 'Unknown Person')).toBe('Unknown Person@s.whatsapp.net');
+    expect(await getWhatsAppId({}, '9999999999')).toBe('9999999999@s.whatsapp.net');
 })
 
-test('get whatsapp id with contact store - no match fallback to phone', async () => {
-    const mockStore = {
-        contacts: {
-            'contact1': {
-                id: '1234567890@s.whatsapp.net',
-                name: 'John Doe',
-                notify: 'Johnny'
-            }
-        }
-    };
+test('get whatsapp id - phone number still works without local contacts', async () => {
+    const { findContact } = require("../src/contacts");
     
-    expect(await getWhatsAppId({}, 'Unknown Person', mockStore)).toBe('Unknown Person@s.whatsapp.net');
-    expect(await getWhatsAppId({}, '9999999999', mockStore)).toBe('9999999999@s.whatsapp.net');
-})
-
-test('get whatsapp id with empty contact store', async () => {
-    const mockStore = {
-        contacts: {}
-    };
+    // Mock no contact found
+    findContact.mockReturnValue(null);
     
-    expect(await getWhatsAppId({}, 'John Doe', mockStore)).toBe('John Doe@s.whatsapp.net');
-})
-
-test('get whatsapp id with undefined store', async () => {
-    expect(await getWhatsAppId({}, 'John Doe', undefined)).toBe('John Doe@s.whatsapp.net');
-})
-
-test('get whatsapp id with contact store - phone number still works', async () => {
-    const mockStore = {
-        contacts: {
-            'contact1': {
-                id: '1234567890@s.whatsapp.net',
-                name: 'John Doe',
-                notify: 'Johnny'
-            }
-        }
-    };
-    
-    expect(await getWhatsAppId({}, '1234567890', mockStore)).toBe('1234567890@s.whatsapp.net');
-    expect(await getWhatsAppId({}, '+1234567890', mockStore)).toBe('1234567890@s.whatsapp.net');
-    expect(await getWhatsAppId({}, '1234567890@s.whatsapp.net', mockStore)).toBe('1234567890@s.whatsapp.net');
+    expect(await getWhatsAppId({}, '1234567890')).toBe('1234567890@s.whatsapp.net');
+    expect(await getWhatsAppId({}, '+1234567890')).toBe('1234567890@s.whatsapp.net');
+    expect(await getWhatsAppId({}, '1234567890@s.whatsapp.net')).toBe('1234567890@s.whatsapp.net');
 })
 
 test('parse geo location', () => {

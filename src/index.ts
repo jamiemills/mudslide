@@ -2,16 +2,22 @@
 import {program} from "commander";
 import {globalOptions, login, logout, mudslideFooter} from "./whatsapp";
 import {
+    addContact,
+    getMessages,
+    listChats,
     listContacts,
     listGroupParticipants,
     listGroups,
+    listenMessages,
     me,
     mutateGroup,
+    removeContact,
     sendFile,
     sendImage,
     sendLocation,
     sendMessage,
-    sendPoll
+    sendPoll,
+    updateContact
 } from "./commands";
 import {bootstrap} from 'global-agent';
 
@@ -66,6 +72,32 @@ function configureCommands() {
         .description('List all your contacts')
         .action(() => listContacts());
     program
+        .command('add-contact <name> <phone-number>')
+        .description('Add a new local contact')
+        .action((name, phoneNumber) => addContact(name, phoneNumber));
+    program
+        .command('remove-contact <name>')
+        .description('Remove a local contact')
+        .action((name) => removeContact(name));
+    program
+        .command('update-contact <name> <new-phone-number>')
+        .description('Update an existing local contact')
+        .action((name, newPhoneNumber) => updateContact(name, newPhoneNumber));
+    program
+        .command('listen')
+        .option('--timeout <seconds>', 'Stop listening after specified seconds', parseInt)
+        .description('Listen for incoming messages')
+        .action((options) => listenMessages(options.timeout));
+    program
+        .command('chats')
+        .description('List recent chats and groups')
+        .action(() => listChats());
+    program
+        .command('messages <chat-id>')
+        .option('--count <number>', 'Number of messages to retrieve', parseInt, 20)
+        .description('Get recent messages from a chat')
+        .action((chatId, options) => getMessages(chatId, options.count));
+    program
         .command('send <recipient> <message>')
         .description('Send message')
         .action((recipient, message, options) => sendMessage(recipient, message, options));
@@ -116,6 +148,14 @@ Examples:
   send 'John Doe' 'hello world'
   send john 'hello world'
   contacts
+  add-contact 'John Doe' '1234567890'
+  remove-contact 'John Doe'
+  update-contact 'John Doe' '0987654321'
+  chats
+  messages 1234567890@s.whatsapp.net
+  messages 123456789-987654321@g.us --count 50
+  listen
+  listen --timeout 30
   send-image 123456789-987654321@g.us pizza.png --caption 'How about Pizza?'
   send-file 'Jane Smith' document.pdf --caption 'Please read'
   send-file me audio.mp3 --type audio

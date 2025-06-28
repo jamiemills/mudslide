@@ -1,485 +1,378 @@
-# Mudslide
+# WhatsApp CLI Tool
 
-> [!IMPORTANT] 
-> The maintainers of this software cannot be held liable for misuse of this
-> application, as stated in the [ISC
-> license](https://github.com/robvanderleek/mudslide/blob/main/LICENSE). The
-> maintainers of Mudslide do not in any way condone the use of this application
-> in practices that violate the Terms of Service of WhatsApp. The maintainers
-> of this application call upon the personal responsibility of its users to use
-> this application in a fair way, as it is intended to be used.
+Send and receive WhatsApp messages from the command-line 📱💻
 
-> [!WARNING] 
-> DO NOT USE THIS TOOL FOR IMPORTANT THINGS. This tool can stop working without
-> notice since it depends on libraries that could be removed any time from
-> GitHub/NPM. 
+## About
 
-<p align="center">
-  <img src="https://github.com/robvanderleek/mudslide/blob/main/assets/mudslide-logo-180x180.png?raw=true"/>
-</p>
-
-<p align="center">
-  <em>Send WhatsApp messages from the command-line 📯</em>
-</p>
-
-<div align="center">
-
-[![main](https://github.com/robvanderleek/mudslide/actions/workflows/main.yml/badge.svg)](https://github.com/robvanderleek/mudslide/actions/workflows/main.yml)
-[![CodeLimit](https://github.com/robvanderleek/mudslide/blob/_codelimit_reports/main/badge.svg)](https://github.com/robvanderleek/mudslide/blob/_codelimit_reports/main/codelimit.md)
-[![npm version](https://badge.fury.io/js/mudslide.svg)](https://badge.fury.io/js/mudslide)
-[![DockerHub image pulls](https://img.shields.io/docker/pulls/robvanderleek/mudslide)](https://hub.docker.com/repository/docker/robvanderleek/mudslide)
-[![Dependabot](https://badgen.net/badge/Dependabot/enabled/green?icon=dependabot)](https://dependabot.com/)
-
-</div>
-
-For an introduction please read this [Medium
-post](https://levelup.gitconnected.com/how-to-send-whatsapp-messages-from-the-command-line-d1afd8b55de5).
+This is a fork of [Mudslide](https://github.com/robvanderleek/mudslide) with enhanced features for local contact management and message receiving capabilities.
 
 This project is based on [Baileys](https://github.com/WhiskeySockets/Baileys),
-a full-featured WhatsApp Web+Multi-Device API library (in case you're wondering
-about the name, a Mudslide is a Baileys cocktail).
+a full-featured WhatsApp Web+Multi-Device API library. Keep in mind that the working of this tool depends on the Baileys library and since that is not an official supported library by WhatsApp it could stop working without notice.
 
-Keep in mind that the working of Mudslide depends on the Baileys library and
-since that is not an official supported library by WhatsApp it could stop
-working without notice.
+## Features
 
+✅ **Send Messages** - Text, images, files, locations, and polls  
+✅ **Receive Messages** - Real-time message listening and chat history  
+✅ **Local Contact Management** - JSON-based contact storage with CRUD operations  
+✅ **Group Management** - Add/remove participants, list groups  
+✅ **Multiple Recipients** - Phone numbers, contact names, groups, or "me"  
+✅ **Cross-Platform** - Works on Linux, macOS, and Windows  
+
+## Table of Contents
+
+* [Quick Start](#quick-start)
 * [Installation](#installation)
-* [Usage](#usage)
+* [Local Contact Management](#local-contact-management)
+* [Sending Messages](#sending-messages)
+* [Receiving Messages](#receiving-messages)
+* [Group Management](#group-management)
 * [Configuration](#configuration)
+* [Development](#development)
 * [Troubleshooting](#troubleshooting)
 * [FAQ](#faq)
-* [Development](#development)
-* [Feedback, suggestions and bug reports](#feedback-suggestions-and-bug-reports)
-* [Contributing](#contributing)
-* [License](#license)
 
-# Installation
+## Quick Start
 
-Using `npx`, installation is not necessary. You can run Mudslide on a system
-with NodeJS 16 or higher from the command-line as follows:
+### Prerequisites
 
-```shell
-npx mudslide@latest -V
-```
+* Node.js 16 or higher
+* npm or yarn package manager
 
-this should display the version number of the latest release.
+### Setup
 
-Using `npm` Mudslide can be installed globally as follows:
+1. **Clone and setup:**
+
+   ```shell
+   git clone https://github.com/jamiemills/mudslide.git
+   cd mudslide
+   npm install
+   npm run build
+   ```
+
+2. **Login to WhatsApp:**
+
+   ```shell
+   npm start -- login
+   ```
+
+   Scan the QR code with your WhatsApp mobile app.
+
+3. **Add some contacts:**
+
+   ```shell
+   npm start -- add-contact 'John Doe' '1234567890'
+   npm start -- add-contact 'Jane Smith' '+44987654321'
+   ```
+
+4. **Send your first message:**
+
+   ```shell
+   npm start -- send 'John Doe' 'Hello from CLI!'
+   ```
+
+5. **Listen for incoming messages:**
+
+   ```shell
+   npm start -- listen
+   ```
+
+## Installation
+
+### Using npm globally
 
 ```shell
 npm install -g mudslide
 ```
 
-## Platform binaries
-
-Binaries for different platforms (Linux, Windows) are available on the [latest
-release page](https://github.com/robvanderleek/mudslide/releases/latest).
-
-## Docker
-
-Mudslide can also run inside a Docker container:
-
-```shell
-docker run robvanderleek/mudslide
-```
-
-Since Mudslide keeps authentication state on disk you need to mount a state
-directory outside the container, for example:
-
-```shell
-docker run -v $HOME/.local/share/mudslide:/usr/src/app/cache -it robvanderleek/mudslide login
-```
-
-or:
-
-```shell
-docker run -v $HOME/.local/share/mudslide:/usr/src/app/cache robvanderleek/mudslide me
-```
-
-### Build image 
-
-You can build the Docker image using the supplied `Dockerfile`:
-
-```shell
-docker build -t mudslide .
-```
-
-Test if the build was successful:
-
-```shell
-docker run -it mudslide
-```
-
-## Docker Compose
-
-If you chose to use `docker-compose` instead of `docker` you can build the
-Docker image using the supplied `assets/docker-compose.yml` file (which in turn
-depends on the supplied `Dockerfile`): 
-
-```shell
-cd assets/
-docker-compose build
-```
-
-Test if the build was successful:
-
-```shell
-docker-compose run mudslide
-```
-
-Since Mudslide keeps authentication state on disk you need to mount a state
-directory outside the container, for example in `~/.local/share/mudslide`:
-
-See respective lines in `docker-compose.yml`
-```yaml
-    volumes:
-        - ~/.local/share/mudslide:/usr/src/app/cache
-```
-
-# Usage
-
-Available commands and options can be listed with `--help` flag:
+### Using npx (no installation)
 
 ```shell
 npx mudslide@latest --help
 ```
 
-for most command it's necessary that you've authorized Mudslide to interact
-with the WhatsApp API on your behalf. This can be done by logging in as
-described below.
-
-## Login
-
-To login you need to authorize Mudslide from another device that has WhatsApp
-installed and scan the QR code printed in the terminal:
+### From source (development)
 
 ```shell
-npx mudslide@latest login
-█▀▀▀▀▀█ ▀▀   ▀  █ █▀▀▀▀▀█
-█ ███ █ █▄ █▀▀▀▀  █ ███ █
-█ ▀▀▀ █ ▀█▀▀▄▀█▀▀ █ ▀▀▀ █
-▀▀▀▀▀▀▀ ▀▄▀▄▀▄█▄▀ ▀▀▀▀▀▀▀
-▀███▄ ▀▄▀▄   ▀▀ █▀ ▄▀▀▀▄▀
-█▄▄▄▄ ▀ ▄  ▄▄▄█▄ ▄█▀ ▄▄
-▀▄ ▄▀ ▀ ▄█▄█ ▄ ▄ ██▄█ ▀▀█
-▄▀▄██▀▀██▄▀ █▄▀▄▄█▀▄█ ▀▀▄
-    ▀▀▀ ███▀▄▄  █▀▀▀█▀█▀█
-█▀▀▀▀▀█   ▀▀█  ▄█ ▀ █ ▀██
-█ ███ █ ▄▄█▀██▄▄▀██▀██▄▄▄
-█ ▀▀▀ █ █▀▀▀▀▀ ▀▀█▀ █ █▀
-▀▀▀▀▀▀▀ ▀▀▀ ▀ ▀  ▀ ▀▀▀▀▀▀
+git clone https://github.com/jamiemills/mudslide.git
+cd mudslide
+npm install
+npm run build
+npm start -- --help
 ```
 
-In the WhatsApp mobile app go to "Settings > Connected Devices > Connect
-Device" and scan the QR code. Wait until the status is "active", then you can
-exit Mudslide.
+## Local Contact Management
 
-## Logout
+This tool includes a built-in contact management system that stores contacts locally in JSON format, independent of WhatsApp's contact synchronization.
 
-Logging out removes credentials from your local environment but will not
-disconnect Mudslide from your WhatsApp account, you can disconnect Mudslide
-using the WhatsApp app.
+### Managing Contacts
+
+**Add a contact:**
 
 ```shell
-npx mudslide@latest logout
+npm start -- add-contact 'John Doe' '1234567890'
+npm start -- add-contact 'Jane Smith' '+44987654321'
 ```
 
-## Different types of recipients
-
-Mudslide supports four types of recipients for sending messages/images/files/etc.:
-
-1. An international phone number (e.g.: `3161234567890`)
-2. A contact name from your synchronized WhatsApp contacts (e.g.: `'John Doe'`)
-3. The authenticated user: `me`
-4. A so-called WhatsApp ID, for example a group ID: `123456789-987654321@g.us`
-
-### Contact name resolution
-
-Mudslide automatically synchronizes with your WhatsApp contacts and allows you to send messages using contact names instead of phone numbers. Contact name matching is case-insensitive and supports partial matches.
-
-## Sending messages
-
-Using the recipient `me` you can send yourself a test message:
+**List all contacts:**
 
 ```shell
-npx mudslide@latest send me 'hello world'
+npm start -- contacts
 ```
 
-To send a message to a phone number:
+**Update a contact:**
 
 ```shell
-npx mudslide@latest send 3161234567890 'hello world'
+npm start -- update-contact 'John Doe' '0987654321'
 ```
 
-To send a message to a contact by name:
+**Remove a contact:**
 
 ```shell
-npx mudslide@latest send 'John Doe' 'hello world'
+npm start -- remove-contact 'John Doe'
 ```
+
+### Using Contact Names
+
+Once you've added contacts, you can use their names in any command:
 
 ```shell
-npx mudslide@latest send john 'hello world'
+npm start -- send 'John Doe' 'Hello there!'
+npm start -- send-image 'Jane Smith' photo.jpg
+npm start -- send-file 'John Doe' document.pdf
 ```
 
-To send a message to a group you are particpating in you need the group ID (see
-the `mudslide groups` command). Send a message to a group as follows:
+**Partial name matching** is supported:
 
 ```shell
-npx mudslide@latest send 123456789-987654321@g.us 'hello world'
+npm start -- send john 'This works too!'
 ```
 
-Use `\n` to send a message with a newline, for example:
+## Sending Messages
+
+### Text Messages
 
 ```shell
-npx mudslide@latest send me 'hello\nworld'
+# Send to yourself
+npm start -- send me 'Test message'
+
+# Send to a phone number
+npm start -- send 1234567890 'Hello world'
+
+# Send to a contact by name
+npm start -- send 'John Doe' 'Hello John!'
+
+# Send to a group (requires group ID)
+npm start -- send 123456789-987654321@g.us 'Hello group!'
+
+# Multi-line messages
+npm start -- send me 'Line 1\nLine 2\nLine 3'
 ```
 
-## Sending an image file
-
-Image files (PNG, JPG, GIF) can be sent to individuals or groups:
+### Images
 
 ```shell
-npx mudslide@latest send-image me image.png
+npm start -- send-image me photo.jpg
+npm start -- send-image 'John Doe' photo.png --caption 'Check this out!'
 ```
+
+### Files
 
 ```shell
-npx mudslide@latest send-image 'John Doe' image.png
+# Send as document
+npm start -- send-file 'Jane Smith' document.pdf
+
+# Send as audio
+npm start -- send-file 'John Doe' music.mp3 --type audio
+
+# Send as video
+npm start -- send-file me video.mp4 --type video
 ```
+
+### Locations
 
 ```shell
-npx mudslide@latest send-image 123456789-987654321@g.us image.jpg
+# Eiffel Tower
+npm start -- send-location 'John Doe' 48.858222 2.2945
+
+# Sydney Opera House
+npm start -- send-location me -33.857058 151.214897
 ```
 
-> **Note**
-> In case there is a space in the path or the file name, enclose the entire
-> path and file name in quotes (")
-
-### Image captions
-
-Use the `--caption` option to add a caption to the image:
+### Polls
 
 ```shell
-npx mudslide@latest send-image --caption 'Your text here' me image.png
+npm start -- send-poll 'John Doe' 'Favorite color?' --item 'Red' --item 'Blue' --item 'Green'
+
+# Allow multiple selections
+npm start -- send-poll 123456789-987654321@g.us 'Weekend plans?' --item 'Movies' --item 'Hiking' --item 'Gaming' --selectable 2
 ```
 
-## Sending other files
+## Receiving Messages
 
-Single files can be sent to individuals or groups:
+### Real-time Message Listening
+
+**Start listening:**
 
 ```shell
-npx mudslide@latest send-file me test.json
+npm start -- listen
 ```
+
+**Listen with timeout:**
 
 ```shell
-npx mudslide@latest send-file 123456789-987654321@g.us document.pdf
+npm start -- listen --timeout 30
 ```
 
-> **Note**
-> In case there is a space in the path or the file name, enclose the entire
-> path and file name in quotes (")
+### Chat Management
 
-### File types
-
-By default, files will be sent as "documents" and show as a download link in the chat.
-The `--type` option can be used for audio and video files that show as a playable message in the chat:
+**List recent chats:**
 
 ```shell
-npx mudslide@latest send-file --type audio 123456789-987654321@g.us music.mp3
+npm start -- chats
 ```
 
-## Sending a location
-
-Geographic locations can be sent to individuals or groups using latitude and
-longitude coordinates. For example, to position yourself at the Eiffel Tower:
+**Get message history:**
 
 ```shell
-npx mudslide@latest send-location me 48.858222 2.2945
+npm start -- messages 1234567890@s.whatsapp.net
+npm start -- messages 123456789-987654321@g.us --count 50
 ```
 
-Or to send your location at the Sydney Opera House to a group:
+## Group Management
+
+### List Groups
 
 ```shell
-npx mudslide@latest send-location 123456789-987654321@g.us -33.857058 151.214897
+npm start -- groups
 ```
 
-## Sending a poll
-
-Polls can be sent to individuals or groups, and allow participants to select 1
-or more items.
-
-For example, to send a poll for the summer holiday destination, allowing
-participants to select 2 items, use:
+### Add/Remove Participants
 
 ```shell
-npx mudslide@latest send-poll 123456789-987654321@g.us 'Summer holiday destination' --item 'France' --item 'Spain' --item 'Italy' --item 'Switzerland' --selectable 2
+# Add participant
+npm start -- add-to-group 123456789-987654321@g.us 1234567890
+npm start -- add-to-group 123456789-987654321@g.us 'John Doe'
+
+# Remove participant
+npm start -- remove-from-group 123456789-987654321@g.us 1234567890
+npm start -- remove-from-group 123456789-987654321@g.us 'John Doe'
 ```
 
-Or to send a quick poll to check who's going training on Friday:
+### List Group Participants
 
 ```shell
-npx mudslide@latest send-poll 123456789-987654321@g.us 'Training on Friday' --item 'Yeeeess!' --item 'Nope' --item 'Maybe...'
+npm start -- list-group 123456789-987654321@g.us
 ```
 
-## List your groups
+## Configuration
 
-To list all the groups you are participating in:
+### Authentication Cache
+
+By default, WhatsApp credentials are cached in:
+
+* **Linux/macOS:** `~/.local/share/mudslide`
+* **Windows:** `AppData\Local\mudslide\Data`
+
+Override with environment variable:
 
 ```shell
-npx mudslide@latest groups
+export MUDSLIDE_CACHE_FOLDER=/custom/path
 ```
 
-this will show a list of group IDs and subjects.
-
-## List your contacts
-
-To list all your synchronized WhatsApp contacts:
+Or use the command-line option:
 
 ```shell
-npx mudslide@latest contacts
+npm start -- --cache /custom/path contacts
 ```
 
-this will show a list of contact names and their WhatsApp IDs in JSON format.
-
-## Add/remove group participants
-
-Participants can be added/removed from existing groups as follows:
+### Proxy Support
 
 ```shell
-npx mudslide@latest add-to-group 123456789-987654321@g.us 3161234567890
+export HTTP_PROXY=http://proxy.server.com:80
+export HTTPS_PROXY=http://proxy.server.com:80
+npm start -- --proxy login
 ```
+
+## Development
+
+### Running Tests
 
 ```shell
-npx mudslide@latest add-to-group 123456789-987654321@g.us 'John Doe'
+npm test
 ```
+
+### Building
 
 ```shell
-npx mudslide@latest remove-from-group 123456789-987654321@g.us 3161234567890
+npm run build
 ```
+
+### Development Commands
 
 ```shell
-npx mudslide@latest remove-from-group 123456789-987654321@g.us 'John Doe'
+# Show help
+npm start -- --help
+
+# Show current user
+npm start -- me
+
+# Increase verbosity
+npm start -- -vvv contacts
 ```
 
-## List group participants
+## Troubleshooting
 
-Group participants can be listed as follows:
+### Connection Issues
 
-```shell
-npx mudslide@latest list-group 123456789-987654321@g.us 
-```
+1. **Logout and login again:**
 
-## Show current user details
+   ```shell
+   npm start -- logout
+   npm start -- login
+   ```
 
-To get the WhatsApp ID of the logged in user:
+2. **Clear cache folder:**
 
-```shell
-npx mudslide@latest me
-```
+   ```shell
+   rm -rf ~/.local/share/mudslide
+   npm start -- login
+   ```
 
-# Configuration
+3. **Increase verbosity:**
 
-By default WhatsApp credentials are cached in a folder located in the user's
-home directory. This folder is `~/.local/share/mudslide` on Linux & macOS and
-`AppData\Local\mudslide\Data` on Windows.
+   ```shell
+   npm start -- -vvv send me 'test'
+   ```
 
-A different location for the cache folder can be configured via the environment
-variable `MUDSLIDE_CACHE_FOLDER` or the `-c`/`--cache` options.
+### Common Problems
 
-You can see the location of the cache folder by running `mudslide me`.
+* **"Not logged in"** - Run `npm start -- login` first
+* **"Contact not found"** - Use `npm start -- contacts` to list available contacts
+* **"Invalid file"** - Check file path and permissions
+* **Messages not sending** - Check internet connection and WhatsApp Web status
 
-## Running behind a proxy server
+## FAQ
 
-When the global option `--proxy` is used, Mudslide will use the environment variables `HTTP_PROXY` and `HTTPS_PROXY` to
-proxy all requests. For example:
+### Can I read messages?
 
-```shell
-export HTTP_PROXY=http://USER:PASS@proxy.server.com:80
-export HTTPS_PROXY=http://USER:PASS@proxy.server.com:80
-npx mudslide@latest --proxy login
-```
+Yes! This tool supports receiving and listening for messages in real-time using the `listen` command, and you can get message history with the `messages` command.
 
-# Troubleshooting
+### How are contacts stored?
 
-In case Mudslide does not give any output or does not behave as expected, try
-removing the local cache folder (see below), then disconnect the client using
-your mobile WhatsApp app, and login again.
+Contacts are stored locally in a JSON file at `~/.local/share/mudslide/contacts.json`. This is independent of WhatsApp's contact synchronization.
 
-## Removing local cache foler
+### Can I use this in scripts?
 
-By default WhatsApp credentials are cached in a folder located in the user's
-home directory. This folder is `~/.local/share/mudslider` on Linux & macOS and
-`AppData\Local\mudslide\Data` on Windows.
+Yes! The tool is designed for automation and scripting. All commands return appropriate exit codes and JSON output where applicable.
 
-You can see the location of the cache folder by running `mudslide me`.
+### Is this secure?
 
-## Increase verbosity
+The tool uses the same encryption as WhatsApp Web. Authentication tokens are stored locally in your cache folder.
 
-To see what goes on in more detail, the verbosity of Mudslide can be incrased
-with the global option `-v`. Use `-vvv` for the greatest level of detail:
+## Contributing
 
-```shell
-npx mudslide@latest -vvv me
-```
+If you have suggestions for improvements or want to report a bug, [open an issue](https://github.com/jamiemills/mudslide/issues)!
 
-# FAQ
-
-## How can I read messages?
-
-Mudslide is for sending messages *only*. If you want to read messages (e.g.
-when building a chat bot), have a look at the [Baileys
-library](https://github.com/WhiskeySockets/Baileys). 
-
-# Development
-
-## Setting up your environment
-
-1. Clone the repository:
-
-    ```shell
-    git clone git@github.com:robvanderleek/mudslide.git
-    ```
-
-    ```shell
-    cd mudslide
-    ```
-
-2. Install dependencies:
-
-    ```shell
-    yarn install
-    ```
-
-3. Run Mudslide:
-
-    ```shell
-    yarn start
-    ```
-
-## Running unit-tests
-
-To run the unit-tests:
-
-```shell
-yarn test
-```
-
-# Feedback, suggestions and bug reports
-
-Please create an issue here: https://github.com/robvanderleek/mudslide/issues
-
-If you like this software, please star :star: it.
-
-## Star history
-
-[![Star History Chart](https://api.star-history.com/svg?repos=robvanderleek/mudslide&type=Date)](https://star-history.com/#robvanderleek/mudslide&Date)
-
-# Contributing
-
-If you have suggestions for how Mudslide could be improved, or want to report a
-bug, [open an issue](https://github.com/robvanderleek/mudslide/issues)! All and
-any contributions are appreciated.
-
-# License
+## License
 
 [ISC](LICENSE) © 2022 Rob van der Leek <robvanderleek@gmail.com>
-(https://twitter.com/robvanderleek)

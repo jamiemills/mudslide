@@ -1,4 +1,4 @@
-import makeWASocket, {DisconnectReason, useMultiFileAuthState, WASocket, makeInMemoryStore} from "baileys";
+import makeWASocket, {DisconnectReason, useMultiFileAuthState, WASocket} from "baileys";
 import pino from "pino";
 import path from "path";
 import * as fs from "fs";
@@ -12,7 +12,7 @@ export const globalOptions = {
     logLevel: 'silent'
 }
 
-export const mudslideFooter = '\u2B50 Please star Mudslide on GitHub! https://github.com/robvanderleek/mudslide';
+export const mudslideFooter = '';//'\u2B50 Please star Mudslide on GitHub! https://github.com/robvanderleek/mudslide';
 
 export function getAuthStateCacheFolderLocation() {
     if (process.env.MUDSLIDE_CACHE_FOLDER) {
@@ -42,16 +42,13 @@ function initAuthStateCacheFolder() {
 }
 
 /**
- * Initialize WhatsApp socket with contact store for name resolution
+ * Initialize WhatsApp socket
  * @param message Optional message for getMessage handler
- * @returns Object containing socket and store for contact access
+ * @returns WhatsApp socket instance
  */
-export async function initWASocket(message?: string): Promise<{socket: WASocket, store: any}> {
+export async function initWASocket(message?: string): Promise<WASocket> {
     const {state, saveCreds} = await useMultiFileAuthState(initAuthStateCacheFolder());
     const os = process.platform === 'darwin' ? 'macOS' : process.platform === 'win32' ? 'Windows' : 'Linux';
-    
-    // Create store to capture synchronized contacts
-    const store = makeInMemoryStore({});
     
     const socket = makeWASocket({
         logger: pino({level: globalOptions.logLevel}),
@@ -65,11 +62,8 @@ export async function initWASocket(message?: string): Promise<{socket: WASocket,
         }
     });
     
-    // Bind store to socket events to capture contacts
-    store.bind(socket.ev);
-    
     socket.ev.on('creds.update', async () => await saveCreds());
-    return {socket, store};
+    return socket;
 }
 
 export function terminate(socket: any, waitSeconds = 1) {
@@ -124,8 +118,8 @@ export async function login(waitForWA = false) {
         signale.info('In the WhatsApp mobile app go to "Settings > Connected Devices > ');
         signale.info('Connect Device" and scan the QR code below');
     }
-    const {socket} = await initWASocket();
-    socket.ev.on('connection.update', async (update) => {
+    const socket = await initWASocket();
+    socket.ev.on('connection.update', async (update: any) => {
         const {connection, lastDisconnect, qr} = update;
 
         if (qr) {
@@ -153,8 +147,8 @@ export async function login(waitForWA = false) {
 
 export async function logout() {
     checkLoggedIn();
-    const {socket} = await initWASocket();
-    socket.ev.on('connection.update', async (update) => {
+    const socket = await initWASocket();
+    socket.ev.on('connection.update', async (update: any) => {
         const {connection} = update
         if (update.connection === undefined && update.qr) {
             clearCacheFolder();
@@ -175,10 +169,13 @@ export async function logout() {
  * Resolve recipient to WhatsApp ID, supporting phone numbers and contact names
  * @param socket WhatsApp socket instance
  * @param recipient Phone number, WhatsApp ID, contact name, or 'me'
- * @param store Optional contact store for name resolution
+ * @param store Optional contact store for name resolution (deprecated, uses local contacts now)
  * @returns WhatsApp ID string
  */
 export async function getWhatsAppId(socket: any, recipient: string, store?: any) {
+    // Import here to avoid circular dependencies
+    const { findContact } = require('./contacts');
+    
     if (recipient.startsWith('+')) {
         recipient = recipient.substring(1);
     }
@@ -192,16 +189,10 @@ export async function getWhatsAppId(socket: any, recipient: string, store?: any)
         }
     }
     
-    // If store is available, search contacts by name
-    if (store && store.contacts) {
-        const contacts = Object.values(store.contacts) as any[];
-        const contact = contacts.find(c => 
-            c.name?.toLowerCase().includes(recipient.toLowerCase()) ||
-            c.notify?.toLowerCase().includes(recipient.toLowerCase())
-        );
-        if (contact) {
-            return contact.id;
-        }
+    // Search local contacts by name
+    const contact = findContact(recipient);
+    if (contact) {
+        return `${contact.phoneNumber}@s.whatsapp.net`;
     }
     
     // Default: treat as phone number
