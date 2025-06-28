@@ -113,8 +113,11 @@ program.addHelpText('after', `
 Examples:
   send --help
   send me 'hello world'
+  send 'John Doe' 'hello world'
+  send john 'hello world'
+  contacts
   send-image 123456789-987654321@g.us pizza.png --caption 'How about Pizza?'
-  send-file 123456789-987654321@g.us document.pdf --caption 'Please read'
+  send-file 'Jane Smith' document.pdf --caption 'Please read'
   send-file me audio.mp3 --type audio
   send-poll 123456789-987654321@g.us 'Training on Friday' --item '🏓 Yeeeessss!' --item '👎 Nope.'
   

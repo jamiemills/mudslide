@@ -186,13 +186,18 @@ npx mudslide@latest logout
 
 ## Different types of recipients
 
-Muslide supports three types of recipients for sending messages/images/files/etc.:
+Mudslide supports four types of recipients for sending messages/images/files/etc.:
 
 1. An international phone number (e.g.: `3161234567890`)
-2. The authenticated user: `me`
-3. A so-called WhatsApp ID, for example a group ID: `123456789-987654321@g.us`
+2. A contact name from your synchronized WhatsApp contacts (e.g.: `'John Doe'`)
+3. The authenticated user: `me`
+4. A so-called WhatsApp ID, for example a group ID: `123456789-987654321@g.us`
 
-## Sending a message to yourself or a phone number
+### Contact name resolution
+
+Mudslide automatically synchronizes with your WhatsApp contacts and allows you to send messages using contact names instead of phone numbers. Contact name matching is case-insensitive and supports partial matches.
+
+## Sending messages
 
 Using the recipient `me` you can send yourself a test message:
 
@@ -204,6 +209,16 @@ To send a message to a phone number:
 
 ```shell
 npx mudslide@latest send 3161234567890 'hello world'
+```
+
+To send a message to a contact by name:
+
+```shell
+npx mudslide@latest send 'John Doe' 'hello world'
+```
+
+```shell
+npx mudslide@latest send john 'hello world'
 ```
 
 To send a message to a group you are particpating in you need the group ID (see
@@ -225,6 +240,10 @@ Image files (PNG, JPG, GIF) can be sent to individuals or groups:
 
 ```shell
 npx mudslide@latest send-image me image.png
+```
+
+```shell
+npx mudslide@latest send-image 'John Doe' image.png
 ```
 
 ```shell
@@ -311,6 +330,16 @@ npx mudslide@latest groups
 
 this will show a list of group IDs and subjects.
 
+## List your contacts
+
+To list all your synchronized WhatsApp contacts:
+
+```shell
+npx mudslide@latest contacts
+```
+
+this will show a list of contact names and their WhatsApp IDs in JSON format.
+
 ## Add/remove group participants
 
 Participants can be added/removed from existing groups as follows:
@@ -320,7 +349,15 @@ npx mudslide@latest add-to-group 123456789-987654321@g.us 3161234567890
 ```
 
 ```shell
+npx mudslide@latest add-to-group 123456789-987654321@g.us 'John Doe'
+```
+
+```shell
 npx mudslide@latest remove-from-group 123456789-987654321@g.us 3161234567890
+```
+
+```shell
+npx mudslide@latest remove-from-group 123456789-987654321@g.us 'John Doe'
 ```
 
 ## List group participants
